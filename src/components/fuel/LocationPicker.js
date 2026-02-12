@@ -73,7 +73,6 @@ export default function LocationPicker({ onLocationSelect, selectedLocation }) {
         address: option.label
       };
       onLocationSelect(newLocation);
-      setAddress(option.label);
       setMapCenter([option.lat, option.lng]);
       setSearchOptions([]);
     }
