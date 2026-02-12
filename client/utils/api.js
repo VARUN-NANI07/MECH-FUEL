@@ -1,6 +1,6 @@
 // src/utils/api.js
 
-const API_BASE = "/api"; // handled by proxy
+const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:5001";
 
 // ---------------- Helper Function ----------------
 async function apiRequest(path, { method = "GET", body, auth = true } = {}) {
@@ -12,7 +12,7 @@ async function apiRequest(path, { method = "GET", body, auth = true } = {}) {
     if (token) headers["Authorization"] = `Bearer ${token}`;
   }
 
-  const res = await fetch(`${API_BASE}${path}`, {
+  const res = await fetch(`${API_BASE}/api${path}`, {
     method,
     headers,
     body: body ? JSON.stringify(body) : undefined,
