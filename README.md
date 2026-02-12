@@ -1,10 +1,14 @@
 # Mech-Fuel 🚗⛽
 
-Emergency Road Services Platform
+A Full-Stack Emergency Road Services Platform
+
+Built using MERN Stack Architecture
 
 Mech-Fuel is a full-stack web application designed to provide emergency roadside assistance quickly and efficiently. The platform allows users to request fuel delivery or mechanical support directly to their location, making roadside emergencies easier to handle.
 
 This project was built to simulate a real-world service platform with authentication, order management, admin control, and secure backend APIs.
+
+The application follows a modular architecture separating frontend and backend, with secure RESTful APIs and role-based access control.
 
 ---
 
@@ -21,7 +25,7 @@ Mech-Fuel connects users with emergency road services in a simple and structured
 
 ### Admin Features
 - View and manage all orders
-- Monitor users
+- Monitor users and service providers
 - Oversee service requests from a central dashboard
 
 ---
@@ -33,7 +37,7 @@ Mech-Fuel connects users with emergency road services in a simple and structured
 - Material UI (MUI)
 - React Router DOM
 - React Leaflet (for location selection)
-- Axios
+- Fetch API for HTTP requests
 - Context API for authentication state
 
 ### Backend
@@ -43,6 +47,33 @@ Mech-Fuel connects users with emergency road services in a simple and structured
 - JWT Authentication
 - bcrypt for password hashing
 - Helmet & Rate Limiting for security
+
+---
+
+## 🏗 Architecture Overview
+
+Mech-Fuel follows a client-server architecture designed for scalability and security.
+
+- The React frontend communicates with the Express backend through RESTful APIs.
+- Authentication is handled using JWT tokens stored securely in localStorage.
+- MongoDB stores user data, fuel orders, and mechanical service requests with proper indexing.
+- Protected routes ensure only authenticated users can access secured pages.
+- Role-based logic separates user, admin, and service provider functionalities.
+- Middleware layer handles authentication, validation, error handling, and file uploads.
+- Controllers manage business logic independently from routes and database operations.
+
+---
+
+## ⭐ Key Technical Highlights
+
+- Implemented JWT-based authentication with refresh token strategy and protected routes.
+- Designed modular RESTful APIs for fuel and mechanical service management with proper HTTP status codes.
+- Integrated interactive maps using React Leaflet and Geosearch for real-time location selection.
+- Applied rate limiting (100 requests per 15 minutes) and secure HTTP headers using Helmet to prevent API abuse.
+- Structured backend using controllers, models, middleware, and routes for separation of concerns and scalability.
+- Implemented input validation and sanitization using express-validator for data integrity.
+- Used bcryptjs for secure password hashing with salt rounds.
+- Configured CORS for secure cross-origin communication between frontend and backend.
 
 ---
 
@@ -57,7 +88,23 @@ Mech-Fuel connects users with emergency road services in a simple and structured
 
 ---
 
-## 📂 Project Structure
+## � Screenshots
+
+### Landing Page
+The main landing page with quick access to fuel delivery and mechanical assistance services.
+
+### Fuel Order Flow
+Step-by-step fuel ordering with location selection, quantity, and checkout.
+
+### Admin Dashboard
+Centralized admin panel for managing orders, monitoring users, and service requests.
+
+### Map Selection
+Interactive map using React Leaflet for precise location selection.
+
+---
+
+## �📂 Project Structure
 
 The project is divided into two main parts:
 
@@ -134,7 +181,20 @@ npm start
 
 ---
 
-## 👨‍💻 Author
+## � Future Improvements
+
+- Real-time service provider tracking using WebSockets
+- Online payment gateway integration (Stripe/PayPal)
+- Push notifications for order updates and status changes
+- Automated deployment with CI/CD pipeline (GitHub Actions)
+- Service provider ratings and reviews system
+- Email notifications for order confirmations
+- Mobile app using React Native for iOS and Android
+- Advanced analytics dashboard for admin insights
+
+---
+
+## �👨‍💻 Author
 
 Developed by Varun (varun77-nani)
 

@@ -90,7 +90,7 @@ export default function FuelOrder() {
         totalPrice: Number(quantity) * pricePerLiter
       };
 
-      const response = await fuelApi.createOrder(payload);
+      await fuelApi.createOrder(payload);
 
       setOrderSubmitted(true);
       // Redirect to dashboard after successful order

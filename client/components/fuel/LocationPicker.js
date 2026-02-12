@@ -32,7 +32,6 @@ function LocationMarker({ onLocationSelect, position }) {
 }
 
 export default function LocationPicker({ onLocationSelect, selectedLocation }) {
-  const [address, setAddress] = useState(selectedLocation?.address || '');
   const [searchOptions, setSearchOptions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [mapCenter, setMapCenter] = useState([17.3850, 78.4867]); // Hyderabad default
