@@ -70,6 +70,15 @@ app.use('/public', express.static(path.join(__dirname, '../public')));
 // API routes
 app.use('/api', routes);
 
+// Root health endpoint for platforms that probe '/'
+app.get('/', (req, res) => {
+    res.status(200).json({
+        status: 'OK',
+        message: 'Mech-Fuel API running',
+        timestamp: new Date().toISOString(),
+    });
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
     res.status(200).json({
