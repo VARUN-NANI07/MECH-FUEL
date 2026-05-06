@@ -1,5 +1,4 @@
 {
-  "buildCommand": "npm run build && node -e \"const fs=require('fs'); const path=require('path'); function findBuild(dir){ if (fs.existsSync(path.join(dir,'static')) || fs.existsSync(path.join(dir,'asset-manifest.json'))) return dir; for (const entry of fs.readdirSync(dir,{withFileTypes:true})) { if (!entry.isDirectory()) continue; const candidate = findBuild(path.join(dir, entry.name)); if (candidate) return candidate; } return null; } const root=process.cwd(); const src=findBuild(root); if (!src) { throw new Error('Build output not found'); } const dest=path.join(root,'build'); if (path.resolve(src)!==path.resolve(dest)) { fs.rmSync(dest,{recursive:true,force:true}); fs.mkdirSync(dest,{recursive:true}); fs.cpSync(src,dest,{recursive:true}); }\"",
-  "installCommand": "npm install",
+  "buildCommand": "npm run build",
   "outputDirectory": "build"
 }
