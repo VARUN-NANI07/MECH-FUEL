@@ -9,6 +9,30 @@ const { errorHandler, notFound } = require('./middleware/errorMiddleware');
 
 const app = express();
 
+const defaultOrigins = [
+    'http://localhost:3000',
+    'https://mechfuel.me',
+    'https://www.mechfuel.me',
+];
+
+const configuredOrigins = (process.env.CORS_ORIGIN || '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
+const allowedOrigins = new Set([...defaultOrigins, ...configuredOrigins]);
+
+const corsOptions = {
+    origin: (origin, callback) => {
+        if (!origin || allowedOrigins.has(origin)) {
+            return callback(null, true);
+        }
+
+        return callback(new Error(`CORS blocked for origin: ${origin}`));
+    },
+    credentials: true,
+};
+
 // Security middleware
 app.use(helmet());
 
@@ -20,12 +44,21 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // CORS
-app.use(
-    cors({
-        origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
-        credentials: true,
-    })
-);
+app.use(cors(corsOptions));
+
+// Ensure single-value ACAO header: override any comma-list coming from proxies
+app.use((req, res, next) => {
+    try {
+        const reqOrigin = req.get('origin');
+        if (reqOrigin && allowedOrigins.has(reqOrigin)) {
+            // force a single matching origin value
+            res.setHeader('Access-Control-Allow-Origin', reqOrigin);
+        }
+    } catch (e) {
+        // swallow errors and continue
+    }
+    next();
+});
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
