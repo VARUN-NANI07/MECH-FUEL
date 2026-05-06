@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm run build",
+  "buildCommand": "npm run build && node -e \"const fs=require('fs'); const src='build'; const dest='client/build'; fs.rmSync(dest,{recursive:true,force:true}); fs.mkdirSync(dest,{recursive:true}); fs.cpSync(src,dest,{recursive:true});\"",
   "installCommand": "npm install",
-  "outputDirectory": "build"
+  "outputDirectory": "client/build"
 }
