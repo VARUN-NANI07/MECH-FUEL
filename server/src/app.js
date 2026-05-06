@@ -4,8 +4,12 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
 
-// CORS
-app.use(cors(corsOptions));
+const routes = require('./routes');
+const { errorHandler, notFound } = require('./middleware/errorMiddleware');
+
+const app = express();
+
+const defaultOrigins = [
     'http://localhost:3000',
     'https://mechfuel.me',
     'https://www.mechfuel.me',
