@@ -2,6 +2,8 @@
 
 Mech-Fuel is a full-stack emergency roadside assistance platform built with the MERN stack. It lets users request fuel delivery or mechanical support, track requests, and manage their account from a responsive web app.
 
+Live site: https://www.mechfuel.me/
+
 ## What It Does
 
 Mech-Fuel connects users with emergency road services in a simple, structured flow.
@@ -81,6 +83,7 @@ npm start
 
 ## URLs
 
+- Live app: https://www.mechfuel.me/
 - Frontend: http://localhost:3000
 - Backend: http://localhost:5001
 
