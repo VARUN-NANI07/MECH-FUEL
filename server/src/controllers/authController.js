@@ -32,11 +32,12 @@ const register = async (req, res) => {
             phone
         });
 
-        // Generate token
+        // Generate token (use safe default for expiresIn)
+        const expiresIn = process.env.JWT_EXPIRES_IN || '7d';
         const token = jwt.sign(
             { userId: user._id, email: user.email },
             process.env.JWT_SECRET,
-            { expiresIn: process.env.JWT_EXPIRES_IN }
+            { expiresIn }
         );
 
         res.status(201).json({
@@ -84,11 +85,12 @@ const login = async (req, res) => {
             });
         }
 
-        // Generate token
+        // Generate token (use safe default for expiresIn)
+        const expiresInLogin = process.env.JWT_EXPIRES_IN || '7d';
         const token = jwt.sign(
             { userId: user._id, email: user.email },
             process.env.JWT_SECRET,
-            { expiresIn: process.env.JWT_EXPIRES_IN }
+            { expiresIn: expiresInLogin }
         );
 
         res.json({
