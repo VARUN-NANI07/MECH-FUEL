@@ -1,6 +1,15 @@
 // src/utils/api.js
 
-const API_BASE = "/api"; // handled by proxy
+// If running in the browser on the live site, prefer the Render backend directly
+let API_BASE = process.env.REACT_APP_API_URL || (process.env.NODE_ENV === "production" ? "" : "http://localhost:5001");
+try {
+  if (typeof window !== 'undefined' && window.location.hostname.includes('mechfuel.me')) {
+    // The Vercel deployment may not forward POST /api requests correctly — call Render backend directly.
+    API_BASE = process.env.REACT_APP_API_URL || 'https://mech-fuel.onrender.com';
+  }
+} catch (e) {
+  // ignore; fallback to build-time value
+}
 
 // ---------------- Helper Function ----------------
 async function apiRequest(path, { method = "GET", body, auth = true } = {}) {
@@ -12,7 +21,7 @@ async function apiRequest(path, { method = "GET", body, auth = true } = {}) {
     if (token) headers["Authorization"] = `Bearer ${token}`;
   }
 
-  const res = await fetch(`${API_BASE}${path}`, {
+  const res = await fetch(`${API_BASE}/api${path}`, {
     method,
     headers,
     body: body ? JSON.stringify(body) : undefined,
@@ -21,7 +30,10 @@ async function apiRequest(path, { method = "GET", body, auth = true } = {}) {
   const data = await res.json().catch(() => ({}));
 
   if (!res.ok) {
-    throw new Error(data.error || "Request failed");
+    const error = new Error(data.error || "Request failed");
+    error.details = data.details || [];
+    error.status = res.status;
+    throw error;
   }
 
   return data;
