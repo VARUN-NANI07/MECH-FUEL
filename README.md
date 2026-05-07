@@ -95,7 +95,7 @@ npm start
 
 ## Author
 
-Developed by Varun (varun77-nani)
+Developed by Almari Varun
 
 ## Purpose
 
