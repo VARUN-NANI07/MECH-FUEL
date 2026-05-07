@@ -1,5 +1,5 @@
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
+const { generateToken } = require('../utils/auth');
 const User = require('../models/User');
 
 // Register new user
@@ -32,14 +32,14 @@ const register = async (req, res) => {
             phone
         });
 
-        // Generate token (use safe default for expiresIn)
-        // Use a safe default for token lifetime in production to avoid invalid env values
-        const expiresIn = '7d';
-        const token = jwt.sign(
-            { userId: user._id, email: user.email },
-            process.env.JWT_SECRET,
-            { expiresIn }
-        );
+        // Generate token
+        let token;
+        try {
+            token = generateToken({ userId: user._id, email: user.email });
+        } catch (e) {
+            console.error('Token generation failed during registration:', e.message);
+            return res.status(500).json({ success: false, error: 'Server error generating auth token' });
+        }
 
         res.status(201).json({
             success: true,
@@ -86,14 +86,13 @@ const login = async (req, res) => {
             });
         }
 
-        // Generate token (use safe default for expiresIn)
-        // Use a safe default for token lifetime in production to avoid invalid env values
-        const expiresInLogin = '7d';
-        const token = jwt.sign(
-            { userId: user._id, email: user.email },
-            process.env.JWT_SECRET,
-            { expiresIn: expiresInLogin }
-        );
+        let token;
+        try {
+            token = generateToken({ userId: user._id, email: user.email });
+        } catch (e) {
+            console.error('Token generation failed during login:', e.message);
+            return res.status(500).json({ success: false, error: 'Server error generating auth token' });
+        }
 
         res.json({
             success: true,

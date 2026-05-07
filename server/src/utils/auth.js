@@ -1,9 +1,24 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
+// Validate configured expiresIn and return safe value
+const resolveExpiresIn = (configured) => {
+    if (!configured || typeof configured !== 'string') return '7d';
+    const v = configured.trim().toLowerCase();
+    if (!v || v === 'undefined' || v === 'null') return '7d';
+    // Allow formats like '7d', '24h', '3600' (seconds) or numeric string
+    return v;
+};
+
 // Generate JWT token
-const generateToken = (payload, expiresIn = '24h') => {
-    return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn });
+const generateToken = (payload, expiresIn) => {
+    const finalExpires = resolveExpiresIn(expiresIn || process.env.JWT_EXPIRES_IN);
+    try {
+        return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: finalExpires });
+    } catch (e) {
+        console.error('JWT generation error (expiresIn=', finalExpires, '):', e.message);
+        throw e;
+    }
 };
 
 // Verify JWT token
