@@ -5,7 +5,9 @@ const User = require('../models/User');
 // Register new user
 const register = async (req, res) => {
     try {
-        const { username, email, password, phone } = req.body;
+        // Accept either `username` or `name` from the client
+        const username = req.body.username || req.body.name;
+        const { email, password, phone } = req.body;
 
         // Check if user exists
         const existingUser = await User.findOne({ 
@@ -18,8 +20,9 @@ const register = async (req, res) => {
             });
         }
 
-        // Hash password
-        const hashedPassword = await bcrypt.hash(password, parseInt(process.env.BCRYPT_ROUNDS));
+        // Hash password (use a safe default if env var is missing)
+        const rounds = parseInt(process.env.BCRYPT_ROUNDS, 10) || 10;
+        const hashedPassword = await bcrypt.hash(password, rounds);
 
         // Create user
         const user = await User.create({
