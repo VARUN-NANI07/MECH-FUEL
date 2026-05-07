@@ -33,10 +33,8 @@ const register = async (req, res) => {
         });
 
         // Generate token (use safe default for expiresIn)
-        const configuredExpires = process.env.JWT_EXPIRES_IN;
-        const expiresIn = (typeof configuredExpires === 'string' && configuredExpires.trim() && configuredExpires.trim().toLowerCase() !== 'undefined' && configuredExpires.trim().toLowerCase() !== 'null')
-            ? configuredExpires.trim()
-            : '7d';
+        // Use a safe default for token lifetime in production to avoid invalid env values
+        const expiresIn = '7d';
         const token = jwt.sign(
             { userId: user._id, email: user.email },
             process.env.JWT_SECRET,
@@ -89,10 +87,8 @@ const login = async (req, res) => {
         }
 
         // Generate token (use safe default for expiresIn)
-        const configuredExpiresLogin = process.env.JWT_EXPIRES_IN;
-        const expiresInLogin = (typeof configuredExpiresLogin === 'string' && configuredExpiresLogin.trim() && configuredExpiresLogin.trim().toLowerCase() !== 'undefined' && configuredExpiresLogin.trim().toLowerCase() !== 'null')
-            ? configuredExpiresLogin.trim()
-            : '7d';
+        // Use a safe default for token lifetime in production to avoid invalid env values
+        const expiresInLogin = '7d';
         const token = jwt.sign(
             { userId: user._id, email: user.email },
             process.env.JWT_SECRET,
