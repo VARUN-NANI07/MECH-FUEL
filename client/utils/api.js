@@ -67,7 +67,23 @@ export const fuelApi = {
       body: payload,
     }),
 
+  getAllOrders: () => apiRequest("/fuel-orders/admin/all"),
   getMyOrders: () => apiRequest("/fuel-orders"),
+  getAssignedOrders: () => apiRequest("/fuel-orders/assigned/me"),
+  assignOrder: (orderId, payload) =>
+    apiRequest(`/fuel-orders/${orderId}/assign`, {
+      method: "PATCH",
+      body: payload,
+    }),
+  updateOrderStatus: (orderId, payload) =>
+    apiRequest(`/fuel-orders/${orderId}/status`, {
+      method: "PATCH",
+      body: payload,
+    }),
+  deleteOrder: (orderId) =>
+    apiRequest(`/fuel-orders/${orderId}`, {
+      method: "DELETE",
+    }),
 };
 
 // ---------------- Mechanical service APIs ----------------
@@ -79,9 +95,25 @@ export const mechApi = {
       body: payload,
     }),
 
+  getAllRequests: () => apiRequest("/mechanical-services/admin/all"),
   getMyServices: () => apiRequest("/mechanical-services"),
+  getAssignedRequests: () => apiRequest("/mechanical-services/assigned/me"),
+  assignRequest: (requestId, payload) =>
+    apiRequest(`/mechanical-services/${requestId}/assign`, {
+      method: "PATCH",
+      body: payload,
+    }),
+  updateRequestStatus: (requestId, payload) =>
+    apiRequest(`/mechanical-services/${requestId}/status`, {
+      method: "PATCH",
+      body: payload,
+    }),
 
   getServiceTypes: () => apiRequest("/mechanical-services/types", { auth: false }),
+  deleteService: (serviceId) =>
+    apiRequest(`/mechanical-services/${serviceId}`, {
+      method: "DELETE",
+    }),
 };
 
 // ---------------- User APIs ----------------
@@ -89,6 +121,10 @@ export const userApi = {
   getDashboard: () => apiRequest("/users/dashboard"),
 
   getOrders: () => apiRequest("/users/orders"),
+
+  getAllUsers: () => apiRequest("/users/admin/all"),
+
+  getProviders: () => apiRequest("/users/providers"),
 
   updateProfile: (payload) =>
     apiRequest("/users/profile", {

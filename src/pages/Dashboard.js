@@ -34,8 +34,18 @@ export default function Dashboard() {
       return;
     }
 
+    if (user?.role === 'admin') {
+      navigate('/admin/dashboard');
+      return;
+    }
+
+    if (user?.role === 'service_provider') {
+      navigate('/provider/dashboard');
+      return;
+    }
+
     fetchOrders();
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, user]);
 
   const fetchOrders = async () => {
     try {

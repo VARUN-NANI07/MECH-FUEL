@@ -6,6 +6,7 @@ const path = require('path');
 
 const routes = require('./routes');
 const { errorHandler, notFound } = require('./middleware/errorMiddleware');
+const debugRoutes = require('./routes/debugRoutes');
 
 const app = express();
 
@@ -69,6 +70,9 @@ app.use('/public', express.static(path.join(__dirname, '../public')));
 
 // API routes
 app.use('/api', routes);
+
+// Debug routes - ⚠️ REMOVE IN PRODUCTION
+app.use('/api', debugRoutes);
 
 // Root health endpoint for platforms that probe '/'
 app.get('/', (req, res) => {

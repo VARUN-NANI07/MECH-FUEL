@@ -2,9 +2,11 @@ const express = require('express');
 const { body } = require('express-validator');
 const {
     getAllFuelOrders,
+    getAssignedFuelOrders,
     createFuelOrder,
     getUserFuelOrders,
     getFuelOrder,
+    assignFuelOrder,
     updateFuelOrderStatus,
     deleteFuelOrder
 } = require('../controllers/fuelOrderController');
@@ -52,11 +54,13 @@ router.use(authenticate);
 
 // Admin route to get all orders
 router.get('/admin/all', getAllFuelOrders);
+router.get('/assigned/me', getAssignedFuelOrders);
 
 // User routes
 router.post('/', fuelOrderValidation, handleValidationErrors, createFuelOrder);
 router.get('/', getUserFuelOrders);
 router.get('/:id', getFuelOrder);
+router.patch('/:id/assign', assignFuelOrder);
 router.patch('/:id/status', statusValidation, handleValidationErrors, updateFuelOrderStatus);
 router.delete('/:id', deleteFuelOrder);
 

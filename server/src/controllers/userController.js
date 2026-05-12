@@ -137,8 +137,48 @@ const getOrderHistory = async (req, res) => {
     }
 };
 
+// Get active service providers for admin assignment dropdowns
+const getServiceProviders = async (req, res) => {
+    try {
+        const providers = await User.find({ role: 'service_provider', isActive: true })
+            .select('username email phone role createdAt')
+            .sort({ username: 1 });
+
+        res.json({
+            success: true,
+            data: { providers }
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: 'Error fetching service providers'
+        });
+    }
+};
+
+// Get all users for admin dashboard
+const getAllUsers = async (req, res) => {
+    try {
+        const users = await User.find()
+            .select('username email phone role isActive createdAt updatedAt')
+            .sort({ createdAt: -1 });
+
+        res.json({
+            success: true,
+            data: { users }
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: 'Error fetching users'
+        });
+    }
+};
+
 module.exports = {
     getDashboardStats,
     updateProfile,
-    getOrderHistory
+    getOrderHistory,
+    getServiceProviders,
+    getAllUsers
 };

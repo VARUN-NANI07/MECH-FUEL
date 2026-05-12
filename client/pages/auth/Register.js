@@ -45,7 +45,11 @@ export default function Register() {
 
       navigate("/dashboard");
     } catch (err) {
-      setError(err.message);
+      const backendDetails = Array.isArray(err.details) ? err.details : [];
+      const detailMessage = backendDetails.length
+        ? backendDetails.map((item) => `${item.field}: ${item.message}`).join(' | ')
+        : '';
+      setError(detailMessage || err.message || 'Registration failed. Please try again.');
     }
   };
 

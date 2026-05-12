@@ -27,7 +27,13 @@ export default function Login() {
         setAuthToken(token, user);
       }
 
-      navigate("/dashboard");
+      if (user?.role === 'admin') {
+        navigate('/admin/dashboard');
+      } else if (user?.role === 'service_provider') {
+        navigate('/provider/dashboard');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (err) {
       setError(err.message || "Login failed");
     }

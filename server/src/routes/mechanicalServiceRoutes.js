@@ -2,9 +2,11 @@ const express = require('express');
 const { body } = require('express-validator');
 const {
     getAllServiceRequests,
+    getAssignedServiceRequests,
     createServiceRequest,
     getUserServiceRequests,
     getServiceRequest,
+    assignServiceRequest,
     updateServiceStatus,
     getServiceTypes,
     deleteServiceRequest
@@ -65,6 +67,7 @@ router.use(authenticate);
 
 // Admin route to get all requests
 router.get('/admin/all', getAllServiceRequests);
+router.get('/assigned/me', getAssignedServiceRequests);
 
 // User routes with file upload support
 router.post(
@@ -78,6 +81,7 @@ router.post(
 
 router.get('/', getUserServiceRequests);
 router.get('/:id', getServiceRequest);
+router.patch('/:id/assign', assignServiceRequest);
 router.patch('/:id/status', statusValidation, handleValidationErrors, updateServiceStatus);
 router.delete('/:id', deleteServiceRequest);
 

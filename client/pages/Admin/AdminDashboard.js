@@ -1,75 +1,407 @@
-import { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
-  Container,
+  Alert,
   Box,
-  Typography,
+  Button,
   Card,
   CardContent,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Tab,
-  Tabs,
   Chip,
   CircularProgress,
-  Alert
+  Container,
+  Divider,
+  FormControl,
+  Grid,
+  InputLabel,
+  MenuItem,
+  Select,
+  Stack,
+  Tab,
+  Tabs,
+  TextField,
+  Typography,
 } from '@mui/material';
-import { apiRequest } from '../../utils/api';
+import { useAuth } from '../../context/AuthContext';
+import { fuelApi, mechApi, userApi } from '../../utils/api';
+
+const fuelStatusOptions = ['pending', 'confirmed', 'dispatched', 'delivered', 'cancelled'];
+const serviceStatusOptions = ['pending', 'assigned', 'in_progress', 'completed', 'cancelled'];
+
+const formatStatus = (status) =>
+  String(status || 'pending')
+    .replaceAll('_', ' ')
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+
+const getStatusColor = (status) => {
+  switch (status) {
+    case 'completed':
+    case 'delivered':
+      return 'success';
+    case 'assigned':
+    case 'confirmed':
+      return 'primary';
+    case 'in_progress':
+    case 'dispatched':
+      return 'warning';
+    case 'cancelled':
+      return 'error';
+    default:
+      return 'default';
+  }
+};
+
+const StatCard = ({ label, value, helper }) => (
+  <Card sx={{ height: '100%' }}>
+    <CardContent>
+      <Typography variant="overline" color="text.secondary">
+        {label}
+      </Typography>
+      <Typography variant="h4" sx={{ mt: 1, fontWeight: 700 }}>
+        {value}
+      </Typography>
+      {helper ? (
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+          {helper}
+        </Typography>
+      ) : null}
+    </CardContent>
+  </Card>
+);
 
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState(0);
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [tab, setTab] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [savingId, setSavingId] = useState('');
+  const [error, setError] = useState('');
+  const [users, setUsers] = useState([]);
   const [fuelOrders, setFuelOrders] = useState([]);
   const [serviceRequests, setServiceRequests] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [providers, setProviders] = useState([]);
+  const [fuelDrafts, setFuelDrafts] = useState({});
+  const [serviceDrafts, setServiceDrafts] = useState({});
 
   useEffect(() => {
-    fetchAllData();
-  }, []);
+    if (!user) return;
+    if (user.role === 'service_provider') {
+      navigate('/dashboard');
+    }
+    if (user.role === 'user') {
+      navigate('/dashboard');
+    }
+  }, [navigate, user]);
 
-  const fetchAllData = async () => {
+  const loadData = async () => {
     setLoading(true);
-    setError(null);
+    setError('');
     try {
-      const [ordersRes, servicesRes] = await Promise.all([
-        apiRequest('/fuel-orders/admin/all', 'GET'),
-        apiRequest('/mechanical-services/admin/all', 'GET')
+      const [usersResponse, fuelResponse, serviceResponse, providersResponse] = await Promise.all([
+        userApi.getAllUsers(),
+        fuelApi.getAllOrders(),
+        mechApi.getAllRequests(),
+        userApi.getProviders(),
       ]);
 
-      if (ordersRes.success) {
-        setFuelOrders(ordersRes.data.orders || []);
-      }
-      if (servicesRes.success) {
-        setServiceRequests(servicesRes.data.services || []);
-      }
-    } catch (err) {
-      setError('Failed to fetch data. ' + err.message);
+      const userItems = usersResponse?.data?.users || usersResponse?.users || [];
+      const fuelItems = fuelResponse?.data?.orders || fuelResponse?.orders || [];
+      const serviceItems = serviceResponse?.data?.services || serviceResponse?.services || [];
+      const providerItems = providersResponse?.data?.providers || providersResponse?.providers || [];
+
+      setUsers(userItems);
+      setFuelOrders(fuelItems);
+      setServiceRequests(serviceItems);
+      setProviders(providerItems);
+
+      setFuelDrafts(
+        fuelItems.reduce((accumulator, item) => {
+          accumulator[item._id] = {
+            assignedTo: item.assignedProvider?._id || '',
+            status: item.status || 'pending',
+          };
+          return accumulator;
+        }, {}),
+      );
+
+      setServiceDrafts(
+        serviceItems.reduce((accumulator, item) => {
+          accumulator[item._id] = {
+            assignedTo: item.assignedMechanic?._id || '',
+            status: item.status || 'pending',
+          };
+          return accumulator;
+        }, {}),
+      );
+    } catch (loadError) {
+      setError(loadError?.message || 'Unable to load admin data');
     } finally {
       setLoading(false);
     }
   };
 
-  const getStatusColor = (status) => {
-    const colorMap = {
-      pending: 'warning',
-      confirmed: 'info',
-      dispatched: 'primary',
-      delivered: 'success',
-      cancelled: 'error',
-      assigned: 'info',
-      in_progress: 'primary',
-      completed: 'success'
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const stats = useMemo(() => {
+    const fuelPending = fuelOrders.filter((item) => item.status === 'pending').length;
+    const servicePending = serviceRequests.filter((item) => item.status === 'pending').length;
+
+    return {
+      totalUsers: users.length,
+      totalFuel: fuelOrders.length,
+      totalService: serviceRequests.length,
+      pendingWork: fuelPending + servicePending,
+      activeProviders: providers.length,
     };
-    return colorMap[status] || 'default';
+  }, [users, fuelOrders, serviceRequests, providers]);
+
+  const customerName = (item) => item?.userId?.username || item?.userId?.name || 'Customer';
+  const customerEmail = (item) => item?.userId?.email || 'Not available';
+  const customerPhone = (item) => item?.userId?.phone || 'Not available';
+
+  const assignedName = (item, key) => {
+    const assigned = item?.[key];
+    return assigned?.username || assigned?.name || assigned?.email || 'Unassigned';
   };
+
+  const renderUsers = () => (
+    <Grid container spacing={2}>
+      {users.map((account) => (
+        <Grid item xs={12} md={6} key={account._id}>
+          <Card variant="outlined">
+            <CardContent>
+              <Stack spacing={1.5}>
+                <Stack direction="row" justifyContent="space-between" spacing={2} alignItems="flex-start">
+                  <Box>
+                    <Typography variant="h6">{account.username}</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {account.email}
+                    </Typography>
+                  </Box>
+                  <Chip
+                    label={formatStatus(account.role)}
+                    color={account.role === 'admin' ? 'error' : account.role === 'service_provider' ? 'primary' : 'default'}
+                  />
+                </Stack>
+                <Typography variant="body2" color="text.secondary">
+                  Phone: {account.phone || 'Not available'}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Active: {account.isActive ? 'Yes' : 'No'}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Joined: {account.createdAt ? new Date(account.createdAt).toLocaleDateString() : 'Unknown'}
+                </Typography>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Grid>
+      ))}
+    </Grid>
+  );
+
+  const renderFuelOrders = () => (
+    <Grid container spacing={2}>
+      {fuelOrders.map((order) => {
+        const draft = fuelDrafts[order._id] || {};
+        return (
+          <Grid item xs={12} md={6} key={order._id}>
+            <Card variant="outlined">
+              <CardContent>
+                <Stack spacing={2}>
+                  <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={2}>
+                    <Box>
+                      <Typography variant="h6">Fuel Order</Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {customerName(order)}
+                      </Typography>
+                    </Box>
+                    <Chip label={formatStatus(order.status)} color={getStatusColor(order.status)} />
+                  </Stack>
+                  <Typography variant="body2" color="text.secondary">
+                    Customer email: {customerEmail(order)}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Customer phone: {customerPhone(order)}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Location: {order.location?.address || order.address || 'Not provided'}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Assigned to: {assignedName(order, 'assignedProvider')}
+                  </Typography>
+                  <Divider />
+                  <Stack spacing={2}>
+                    <FormControl fullWidth size="small">
+                      <InputLabel id={`fuel-provider-${order._id}`}>Assign provider</InputLabel>
+                      <Select
+                        labelId={`fuel-provider-${order._id}`}
+                        label="Assign provider"
+                        value={draft.assignedTo || ''}
+                        onChange={(event) => setFuelDrafts((current) => ({
+                          ...current,
+                          [order._id]: { ...(current[order._id] || {}), assignedTo: event.target.value },
+                        }))}
+                      >
+                        <MenuItem value="">Unassigned</MenuItem>
+                        {providers.map((provider) => (
+                          <MenuItem key={provider._id} value={provider._id}>
+                            {provider.username || provider.email}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                    <TextField
+                      select
+                      fullWidth
+                      size="small"
+                      label="Status"
+                      value={draft.status || order.status || 'pending'}
+                      onChange={(event) => setFuelDrafts((current) => ({
+                        ...current,
+                        [order._id]: { ...(current[order._id] || {}), status: event.target.value },
+                      }))}
+                    >
+                      {fuelStatusOptions.map((status) => (
+                        <MenuItem key={status} value={status}>
+                          {formatStatus(status)}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                    <Button
+                      variant="contained"
+                      onClick={async () => {
+                        setSavingId(order._id);
+                        setError('');
+                        try {
+                          await fuelApi.assignOrder(order._id, {
+                            assignedProvider: draft.assignedTo || null,
+                            status: draft.status || 'pending',
+                          });
+                          await loadData();
+                        } catch (saveError) {
+                          setError(saveError?.message || 'Unable to update fuel order');
+                        } finally {
+                          setSavingId('');
+                        }
+                      }}
+                      disabled={savingId === order._id}
+                    >
+                      {savingId === order._id ? 'Saving...' : 'Save update'}
+                    </Button>
+                  </Stack>
+                </Stack>
+              </CardContent>
+            </Card>
+          </Grid>
+        );
+      })}
+    </Grid>
+  );
+
+  const renderServiceRequests = () => (
+    <Grid container spacing={2}>
+      {serviceRequests.map((request) => {
+        const draft = serviceDrafts[request._id] || {};
+        return (
+          <Grid item xs={12} md={6} key={request._id}>
+            <Card variant="outlined">
+              <CardContent>
+                <Stack spacing={2}>
+                  <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={2}>
+                    <Box>
+                      <Typography variant="h6">Mechanical Request</Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {customerName(request)}
+                      </Typography>
+                    </Box>
+                    <Chip label={formatStatus(request.status)} color={getStatusColor(request.status)} />
+                  </Stack>
+                  <Typography variant="body2" color="text.secondary">
+                    Customer email: {customerEmail(request)}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Customer phone: {customerPhone(request)}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Location: {request.location?.address || request.address || 'Not provided'}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Assigned to: {assignedName(request, 'assignedMechanic')}
+                  </Typography>
+                  <Divider />
+                  <Stack spacing={2}>
+                    <FormControl fullWidth size="small">
+                      <InputLabel id={`service-provider-${request._id}`}>Assign mechanic</InputLabel>
+                      <Select
+                        labelId={`service-provider-${request._id}`}
+                        label="Assign mechanic"
+                        value={draft.assignedTo || ''}
+                        onChange={(event) => setServiceDrafts((current) => ({
+                          ...current,
+                          [request._id]: { ...(current[request._id] || {}), assignedTo: event.target.value },
+                        }))}
+                      >
+                        <MenuItem value="">Unassigned</MenuItem>
+                        {providers.map((provider) => (
+                          <MenuItem key={provider._id} value={provider._id}>
+                            {provider.username || provider.email}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                    <TextField
+                      select
+                      fullWidth
+                      size="small"
+                      label="Status"
+                      value={draft.status || request.status || 'pending'}
+                      onChange={(event) => setServiceDrafts((current) => ({
+                        ...current,
+                        [request._id]: { ...(current[request._id] || {}), status: event.target.value },
+                      }))}
+                    >
+                      {serviceStatusOptions.map((status) => (
+                        <MenuItem key={status} value={status}>
+                          {formatStatus(status)}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                    <Button
+                      variant="contained"
+                      onClick={async () => {
+                        setSavingId(request._id);
+                        setError('');
+                        try {
+                          await mechApi.assignRequest(request._id, {
+                            assignedMechanic: draft.assignedTo || null,
+                            status: draft.status || 'pending',
+                          });
+                          await loadData();
+                        } catch (saveError) {
+                          setError(saveError?.message || 'Unable to update service request');
+                        } finally {
+                          setSavingId('');
+                        }
+                      }}
+                      disabled={savingId === request._id}
+                    >
+                      {savingId === request._id ? 'Saving...' : 'Save update'}
+                    </Button>
+                  </Stack>
+                </Stack>
+              </CardContent>
+            </Card>
+          </Grid>
+        );
+      })}
+    </Grid>
+  );
 
   if (loading) {
     return (
-      <Container maxWidth="xl" sx={{ py: 4, display: 'flex', justifyContent: 'center' }}>
+      <Container maxWidth="xl" sx={{ py: 6, display: 'flex', justifyContent: 'center' }}>
         <CircularProgress />
       </Container>
     );
@@ -78,211 +410,29 @@ export default function AdminDashboard() {
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
       <Typography variant="h4" gutterBottom sx={{ mb: 4, fontWeight: 'bold' }}>
-        📊 Admin Dashboard
+        Admin Dashboard
       </Typography>
 
       {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
 
-      {/* Stats Cards */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 2, mb: 4 }}>
-        <Card>
-          <CardContent>
-            <Typography color="textSecondary" gutterBottom>
-              Total Fuel Orders
-            </Typography>
-            <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
-              {fuelOrders.length}
-            </Typography>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent>
-            <Typography color="textSecondary" gutterBottom>
-              Total Service Requests
-            </Typography>
-            <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#d32f2f' }}>
-              {serviceRequests.length}
-            </Typography>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent>
-            <Typography color="textSecondary" gutterBottom>
-              Total Orders & Requests
-            </Typography>
-            <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#388e3c' }}>
-              {fuelOrders.length + serviceRequests.length}
-            </Typography>
-          </CardContent>
-        </Card>
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 2, mb: 4 }}>
+        <StatCard label="Registered users" value={stats.totalUsers} helper="All accounts in the system" />
+        <StatCard label="Fuel orders" value={stats.totalFuel} helper="All fuel requests" />
+        <StatCard label="Service requests" value={stats.totalService} helper="All mechanical requests" />
+        <StatCard label="Pending work" value={stats.pendingWork} helper="Requests waiting for action" />
       </Box>
 
-      {/* Tabs */}
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-        <Tabs value={activeTab} onChange={(e, val) => setActiveTab(val)}>
+        <Tabs value={tab} onChange={(e, val) => setTab(val)}>
+          <Tab label={`Users (${users.length})`} />
           <Tab label={`Fuel Orders (${fuelOrders.length})`} />
           <Tab label={`Service Requests (${serviceRequests.length})`} />
         </Tabs>
       </Box>
 
-      {/* Fuel Orders Tab */}
-      {activeTab === 0 && (
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
-              <TableRow>
-                <TableCell sx={{ fontWeight: 'bold' }}>Order ID</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>User</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Fuel Type</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Quantity (L)</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Location</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Amount (₹)</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Date</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {fuelOrders.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={8} align="center" sx={{ py: 3 }}>
-                    <Typography color="textSecondary">No fuel orders yet</Typography>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                fuelOrders.map((order) => (
-                  <TableRow key={order._id} hover>
-                    <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>
-                      {order._id?.substring(0, 8)}...
-                    </TableCell>
-                    <TableCell>
-                      <Box>
-                        <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                          {order.userId?.username || 'Unknown'}
-                        </Typography>
-                        <Typography variant="caption" color="textSecondary">
-                          {order.userId?.email}
-                        </Typography>
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={order.fuelType?.toUpperCase()}
-                        size="small"
-                        color={order.fuelType === 'petrol' ? 'info' : 'warning'}
-                        variant="outlined"
-                      />
-                    </TableCell>
-                    <TableCell>{order.quantity}</TableCell>
-                    <TableCell>
-                      <Typography variant="body2">{order.location?.address}</Typography>
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: 'bold', color: '#388e3c' }}>
-                      ₹{order.totalAmount?.toFixed(2)}
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={order.status?.toUpperCase()}
-                        size="small"
-                        color={getStatusColor(order.status)}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="caption">
-                        {new Date(order.createdAt).toLocaleDateString()}
-                      </Typography>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      )}
-
-      {/* Service Requests Tab */}
-      {activeTab === 1 && (
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
-              <TableRow>
-                <TableCell sx={{ fontWeight: 'bold' }}>Request ID</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>User</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Services</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Vehicle</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Location</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Amount (₹)</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Date</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {serviceRequests.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={8} align="center" sx={{ py: 3 }}>
-                    <Typography color="textSecondary">No service requests yet</Typography>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                serviceRequests.map((service) => (
-                  <TableRow key={service._id} hover>
-                    <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>
-                      {service._id?.substring(0, 8)}...
-                    </TableCell>
-                    <TableCell>
-                      <Box>
-                        <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                          {service.userId?.username || 'Unknown'}
-                        </Typography>
-                        <Typography variant="caption" color="textSecondary">
-                          {service.userId?.email}
-                        </Typography>
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                        {service.services?.map((svc, idx) => (
-                          <Chip
-                            key={idx}
-                            label={svc.replace('_', ' ')}
-                            size="small"
-                            variant="outlined"
-                          />
-                        ))}
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2">
-                        {service.vehicleDetails?.make} {service.vehicleDetails?.model}
-                      </Typography>
-                      <Typography variant="caption" color="textSecondary">
-                        {service.vehicleDetails?.year}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2">{service.location?.address}</Typography>
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: 'bold', color: '#388e3c' }}>
-                      ₹{service.totalAmount?.toFixed(2)}
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={service.status?.toUpperCase()}
-                        size="small"
-                        color={getStatusColor(service.status)}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="caption">
-                        {new Date(service.createdAt).toLocaleDateString()}
-                      </Typography>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      )}
+      {tab === 0 && renderUsers()}
+      {tab === 1 && renderFuelOrders()}
+      {tab === 2 && renderServiceRequests()}
     </Container>
   );
 }

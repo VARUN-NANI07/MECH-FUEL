@@ -24,6 +24,16 @@ export default function Header() {
   };
 
   const handleDashboard = () => {
+    if (user?.role === 'admin') {
+      navigate('/admin/dashboard');
+      return;
+    }
+
+    if (user?.role === 'service_provider') {
+      navigate('/provider/dashboard');
+      return;
+    }
+
     navigate('/dashboard');
     handleMenuClose();
   };

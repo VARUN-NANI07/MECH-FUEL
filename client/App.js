@@ -4,12 +4,15 @@ import FuelOrder from './pages/FuelService/FuelOrder';
 import ServiceRequest from './pages/MechanicalService/ServiceRequest';
 import ServiceCheckout from './pages/MechanicalService/ServiceCheckout'; // ✅ added
 import AdminDashboard from './pages/Admin/AdminDashboard'; // ✅ added
+import Debug from './pages/Debug'; // ✅ Debug page
+import DebugLogin from './pages/DebugLogin'; // ✅ Debug login
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import Header from './components/common/Header';
 import Footer from './components/common/Footer';
 import MapPage from './pages/MapPage'; // 👈 already added
 import ProtectedRoute from './components/auth/ProtectedRoute'; // ✅ added
+import AdminRoute from './components/auth/AdminRoute'; // ✅ added for admin-only routes
 import './App.css';
 import 'leaflet/dist/leaflet.css';
 
@@ -36,15 +39,19 @@ function App() {
             }
           />
 
-          {/* ✅ Admin Dashboard Route */}
+          {/* ✅ Admin Dashboard Route - Only for admin users */}
           <Route
             path="/admin/dashboard"
             element={
-              <ProtectedRoute>
+              <AdminRoute>
                 <AdminDashboard />
-              </ProtectedRoute>
+              </AdminRoute>
             }
           />
+
+          {/* 🔧 Debug pages - Remove in production */}
+          <Route path="/debug" element={<Debug />} />
+          <Route path="/debug-login" element={<DebugLogin />} />
         </Routes>
       </main>
       <Footer />

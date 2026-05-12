@@ -2,9 +2,11 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { TextField, Button, Typography, Container, Box } from "@mui/material";
 import { authApi } from "../../utils/api";
+import { useAuth } from "../../context/AuthContext";
 
 export default function Login() {
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -16,14 +18,36 @@ export default function Login() {
 
     try {
       const res = await authApi.login({ email, password });
+      
+      console.log("LOGIN RESPONSE:", res); // Debug log
+      console.log("User data:", res.data?.user); // Debug log
 
       // backend returns: { success, data: { token, user } }
-      const token = res.data.token;
-      localStorage.setItem("token", token);
+      const token = res.data?.token;
+      const user = res.data?.user;
+      
+      console.log("Extracted token:", token); // Debug log
+      console.log("Extracted user:", user); // Debug log
+      console.log("User role:", user?.role); // Debug log
 
-      navigate("/dashboard");
+      if (token && user) {
+        login(user, token);
+        console.log("Login context updated"); // Debug log
+      } else if (token) {
+        localStorage.setItem("token", token);
+      }
+
+      if (user?.role === 'admin') {
+        console.log("Navigating to admin dashboard"); // Debug log
+        navigate('/admin/dashboard');
+      } else if (user?.role === 'service_provider') {
+        navigate('/dashboard');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (err) {
-      setError(err.message);
+      console.error("Login error:", err); // Debug log
+      setError(err.message || "Login failed");
     }
   };
 

@@ -4,6 +4,7 @@ import FuelOrder from './pages/FuelService/FuelOrder';
 import ServiceRequest from './pages/MechanicalService/ServiceRequest';
 import ServiceCheckout from './pages/MechanicalService/ServiceCheckout'; // ✅ added
 import AdminDashboard from './pages/Admin/AdminDashboard'; // ✅ added
+import ProviderDashboard from './pages/Provider/ProviderDashboard';
 import Dashboard from './pages/Dashboard'; // ✅ User dashboard
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
@@ -53,6 +54,24 @@ function App() {
             element={
               <ProtectedRoute>
                 <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/provider/dashboard"
+            element={
+              <ProtectedRoute>
+                <ProviderDashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/receiver/dashboard"
+            element={
+              <ProtectedRoute>
+                <ProviderDashboard />
               </ProtectedRoute>
             }
           />

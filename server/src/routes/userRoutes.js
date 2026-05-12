@@ -3,9 +3,11 @@ const { body } = require('express-validator');
 const {
     getDashboardStats,
     updateProfile,
-    getOrderHistory
+    getOrderHistory,
+    getServiceProviders,
+    getAllUsers
 } = require('../controllers/userController');
-const { authenticate } = require('../middleware/authMiddleware');
+const { authenticate, requireRole } = require('../middleware/authMiddleware');
 const { handleValidationErrors } = require('../middleware/validationMiddleware');
 
 const router = express.Router();
@@ -44,6 +46,8 @@ router.use(authenticate);
 // Routes
 router.get('/dashboard', getDashboardStats);
 router.get('/orders', getOrderHistory);
+router.get('/admin/all', requireRole(['admin']), getAllUsers);
+router.get('/providers', requireRole(['admin']), getServiceProviders);
 router.patch('/profile', profileValidation, handleValidationErrors, updateProfile);
 
 module.exports = router;

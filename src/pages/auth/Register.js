@@ -48,10 +48,20 @@ export default function Register() {
         localStorage.setItem("user", JSON.stringify(res.data.user));
       }
 
-      navigate("/dashboard");
+      if (res.data.user?.role === 'admin') {
+        navigate('/admin/dashboard');
+      } else if (res.data.user?.role === 'service_provider') {
+        navigate('/provider/dashboard');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (err) {
       console.error('Registration error:', err);
-      setError(err.message || 'Registration failed. Please try again.');
+      const backendDetails = Array.isArray(err.details) ? err.details : [];
+      const detailMessage = backendDetails.length
+        ? backendDetails.map((item) => `${item.field}: ${item.message}`).join(' | ')
+        : '';
+      setError(detailMessage || err.message || 'Registration failed. Please try again.');
     }
   };
 

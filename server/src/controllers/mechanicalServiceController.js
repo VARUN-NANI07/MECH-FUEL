@@ -1,5 +1,15 @@
 const MechanicalService = require('../models/MechanicalService');
 
+const normalizeId = (value) => (value && value._id ? value._id.toString() : value ? value.toString() : null);
+
+const canManageServiceRequest = (service, user) => {
+    const ownerId = normalizeId(service.userId);
+    const mechanicId = normalizeId(service.assignedMechanic);
+    const currentUserId = normalizeId(user.userId);
+
+    return user.role === 'admin' || ownerId === currentUserId || mechanicId === currentUserId;
+};
+
 // Service pricing configuration (in INR)
 const SERVICE_PRICES = {
     'battery_jumpstart': 2075,      // 25 USD
@@ -27,6 +37,26 @@ const getAllServiceRequests = async (req, res) => {
         res.status(500).json({
             success: false,
             error: 'Error fetching service requests'
+        });
+    }
+};
+
+// Get service requests assigned to the current mechanic/provider
+const getAssignedServiceRequests = async (req, res) => {
+    try {
+        const services = await MechanicalService.find({ assignedMechanic: req.user.userId })
+            .sort({ createdAt: -1 })
+            .populate('userId', 'username email phone')
+            .populate('assignedMechanic', 'username email phone role');
+
+        res.json({
+            success: true,
+            data: { services }
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: 'Error fetching assigned service requests'
         });
     }
 };
@@ -127,14 +157,8 @@ const getServiceRequest = async (req, res) => {
 const updateServiceStatus = async (req, res) => {
     try {
         const { status } = req.body;
-        
-        const service = await MechanicalService.findOneAndUpdate(
-            { _id: req.params.id, userId: req.user.userId },
-            { status },
-            { new: true }
-        )
-        .populate('userId', 'username email phone')
-        .populate('assignedMechanic', 'username email phone');
+
+        const service = await MechanicalService.findById(req.params.id);
 
         if (!service) {
             return res.status(404).json({
@@ -142,6 +166,19 @@ const updateServiceStatus = async (req, res) => {
                 error: 'Service request not found'
             });
         }
+
+        if (!canManageServiceRequest(service, req.user)) {
+            return res.status(403).json({
+                success: false,
+                error: 'You do not have permission to update this service request'
+            });
+        }
+
+        service.status = status;
+        await service.save();
+
+        await service.populate('userId', 'username email phone');
+        await service.populate('assignedMechanic', 'username email phone role');
 
         res.json({
             success: true,
@@ -152,6 +189,49 @@ const updateServiceStatus = async (req, res) => {
         res.status(500).json({
             success: false,
             error: 'Error updating service request'
+        });
+    }
+};
+
+// Assign a service request to a mechanic/provider
+const assignServiceRequest = async (req, res) => {
+    try {
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({
+                success: false,
+                error: 'Only admins can assign service requests'
+            });
+        }
+
+        const { assignedMechanic, status = 'assigned', estimatedCompletionTime } = req.body;
+        const service = await MechanicalService.findById(req.params.id);
+
+        if (!service) {
+            return res.status(404).json({
+                success: false,
+                error: 'Service request not found'
+            });
+        }
+
+        service.assignedMechanic = assignedMechanic || null;
+        service.status = status;
+        if (estimatedCompletionTime) {
+            service.estimatedCompletionTime = estimatedCompletionTime;
+        }
+
+        await service.save();
+        await service.populate('userId', 'username email phone');
+        await service.populate('assignedMechanic', 'username email phone role');
+
+        res.json({
+            success: true,
+            message: 'Service request assigned successfully',
+            data: { service }
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: 'Error assigning service request'
         });
     }
 };
@@ -220,9 +300,11 @@ const formatServiceName = (service) => {
 
 module.exports = {
     getAllServiceRequests,
+    getAssignedServiceRequests,
     createServiceRequest,
     getUserServiceRequests,
     getServiceRequest,
+    assignServiceRequest,
     updateServiceStatus,
     getServiceTypes,
     deleteServiceRequest

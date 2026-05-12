@@ -35,7 +35,7 @@ const register = async (req, res) => {
         // Generate token
         let token;
         try {
-            token = generateToken({ userId: user._id, email: user.email });
+            token = generateToken({ userId: user._id, email: user.email, role: user.role });
         } catch (e) {
             console.error('Token generation failed during registration:', e.message);
             return res.status(500).json({ success: false, error: 'Server error generating auth token' });
@@ -50,7 +50,8 @@ const register = async (req, res) => {
                     id: user._id,
                     username: user.username,
                     email: user.email,
-                    phone: user.phone
+                    phone: user.phone,
+                    role: user.role
                 }
             }
         });
@@ -88,11 +89,13 @@ const login = async (req, res) => {
 
         let token;
         try {
-            token = generateToken({ userId: user._id, email: user.email });
+            token = generateToken({ userId: user._id, email: user.email, role: user.role });
         } catch (e) {
             console.error('Token generation failed during login:', e.message);
             return res.status(500).json({ success: false, error: 'Server error generating auth token' });
         }
+
+        console.log("User logged in:", user.email, "Role:", user.role); // Debug log
 
         res.json({
             success: true,
